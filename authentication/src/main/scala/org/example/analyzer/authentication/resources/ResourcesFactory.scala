@@ -1,27 +1,41 @@
 package org.example.analyzer.authentication.resources
 
+// TODO: Create an execution context dedicated for https? 
+import scala.concurrent.ExecutionContext
 import cats.Applicative
 import cats.effect.Resource
+import doobie.util.ExecutionContexts
 import cats.effect.kernel.Async
 import cats.implicits.catsSyntaxApplicativeId
-import org.example.analyzer.authentication.config.ConfigLoader
-import org.example.analyzer.authentication.config.domain.AuthServiceConfig
+import org.example.analyzer.authentication.config.domain._
+import cats.effect.IO
+import org.example.analyzer.authentication.config.domain
+import doobie.hikari.HikariTransactor
+import org.http4s.server.blaze.BlazeServerBuilder
 
-object ResourceFactory {
-  def getResources[F[_]: Async](configFile: String): Resource[F, Resources] =
-    resources(ConfigLoader.loader(configFile))
+final case class AppResources(psql: HikariTransactor[IO])
 
-  def getResources[F[_]: Applicative](
-    config: AuthServiceConfig
-  ): Resource[F, Resources] =
-    resources(config.pure)
-
-  private def resources[F[_]](
-    config: F[AuthServiceConfig]
-  ): Resource[F, Resources] =
+object AppResources {
+  def make(cfg: AuthServiceConfig): Resource[IO, AppResources] =
     for {
-      config <- Resource.eval(config)
-    } yield Resources(config)
+      psql <- mkPostgreSQLResource(cfg.databaseConfig)
+    } yield AppResources(psql)
 
-  final case class Resources(config: AuthServiceConfig)
+    def mkPostgreSQLResource(
+      databaseConfig: AuthenticationDatabaseConfig
+    ): Resource[IO, HikariTransactor[IO]] = {
+      for {
+        ce <- ExecutionContexts.fixedThreadPool[IO](
+          databaseConfig.threadPoolSize
+        )
+        xa <- HikariTransactor.newHikariTransactor[IO](
+          driverClassName = databaseConfig.driver,
+          url =
+            s"jdbc:postgresql://${databaseConfig.host}:${databaseConfig.port}/${databaseConfig.databaseName}",
+          user = databaseConfig.user,
+          pass = databaseConfig.password,
+          connectEC = ce
+        )
+      } yield xa
+    }
 }

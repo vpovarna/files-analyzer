@@ -13,6 +13,8 @@ lazy val compilerOptions = Seq(
 lazy val catsEffectVersion = "3.4.5"
 lazy val catsVersion       = "2.9.0"
 lazy val pureConfigVersion = "0.17.2"
+lazy val doobieVersion     = "1.0.0-RC1"
+lazy val http4sVersion     = "1.0.0-M21"
 
 val commonDeps = Seq(
   "org.typelevel" %% "cats-effect" % catsEffectVersion,
@@ -39,7 +41,17 @@ lazy val authentication = project
   .in(file("authentication"))
   .settings(
     name := "authentication",
-    libraryDependencies ++= commonDeps
+    libraryDependencies ++= commonDeps ++ Seq(
+      // Repository
+      "org.tpolecat" %% "doobie-core"     % doobieVersion,
+      "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+      "org.tpolecat" %% "doobie-hikari"   % doobieVersion,
+
+      // Http4s libs
+      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
+      "org.http4s" %% "http4s-circe"        % http4sVersion,
+      "org.http4s" %% "http4s-dsl"          % http4sVersion,
+    )
   )
   .dependsOn(commons)
 
