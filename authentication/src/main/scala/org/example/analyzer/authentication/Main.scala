@@ -1,9 +1,7 @@
 package org.example.analyzer.authentication
 
-import cats.effect.{ IO, IOApp }
-import org.example.analyzer.authentication.config.Loader
+import cats.effect.{ ExitCode, IO, IOApp }
 
-object Main extends IOApp.Simple {
-  override def run: IO[Unit] =
-    Loader.apply("application.conf").debug().void
+object Main extends IOApp {
+  override def run(args: List[String]): IO[ExitCode] = HttpServer.create()
 }

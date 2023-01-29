@@ -2,12 +2,12 @@ package org.example.analyzer.authentication.config
 
 import cats.effect.IO
 import com.typesafe.config.ConfigFactory
-import org.example.analyzer.authentication.config.domain.AuthServiceConfig
+import org.example.analyzer.authentication.domain.AuthServiceConfig
 import pureconfig.ConfigSource
-import pureconfig.module.catseffect.syntax._
 import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 
-object Loader {
+object ConfigLoader {
 
   def apply(configFile: String = "application.conf"): IO[AuthServiceConfig] =
     ConfigSource
