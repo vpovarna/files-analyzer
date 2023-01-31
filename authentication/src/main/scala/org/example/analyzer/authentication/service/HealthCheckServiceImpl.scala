@@ -8,11 +8,7 @@ import dev.profunktor.redis4cats.RedisCommands
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
 import org.example.analyzer.authentication.algebra.HealthCheckService
-import org.example.analyzer.authentication.domain.HealthCheckDomain.{
-  AuthServiceHealthStatus,
-  PostgresStatus,
-  RedisStatus
-}
+import org.example.analyzer.authentication.domain._
 
 object HealthCheckServiceImpl {
 

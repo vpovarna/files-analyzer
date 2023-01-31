@@ -18,12 +18,12 @@ object AppResources {
     authServiceConfig: IO[AuthServiceConfig]
   ): Resource[IO, AppResources] =
     for {
-      cfg   <- Resource.eval(authServiceConfig)
-      psql  <- mkPostgreSQLResource(cfg.postgresConfig)
+      cfg <- Resource.eval(authServiceConfig)
+      psql <- mkPostgresResource(cfg.postgresConfig)
       redis <- mkRedisResource(cfg.redisConfig)
     } yield AppResources(cfg, psql, redis)
 
-  private def mkPostgreSQLResource(
+  private def mkPostgresResource(
     postgresConfig: PostgresConfig
   ): Resource[IO, HikariTransactor[IO]] = {
     for {

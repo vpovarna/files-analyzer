@@ -29,6 +29,7 @@ object HttpServer {
       .drain
       .as(ExitCode.Success)
 
+  // Wiring
   private def getHttpRoutes(
     appResources: AppResources
   ): Kleisli[IO, Request[IO], Response[IO]] = {
