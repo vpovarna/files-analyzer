@@ -6,7 +6,8 @@ import cats.data.Kleisli
 import cats.effect.{ ExitCode, IO }
 import org.example.analyzer.authentication.config.ConfigLoader
 import org.example.analyzer.authentication.resources.AppResources
-import org.example.analyzer.authentication.routes.HttpApis
+import org.example.analyzer.authentication.routes.HttpApi
+import org.example.analyzer.authentication.service.HealthCheckServiceImpl
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.{ Request, Response }
 
@@ -17,20 +18,22 @@ object HttpServer {
   }
 
   private def createHttpServer(resources: AppResources): IO[ExitCode] =
-    for {
-      exitCode <- BlazeServerBuilder[IO](ExecutionContext.global)
-        .bindHttp(
-          port = resources.authServiceConfig.httpServerConfig.port,
-          host = resources.authServiceConfig.httpServerConfig.address
-        )
-        .withHttpApp(httpApp = getHttpRoutes)
-        .serve
-        .compile
-        .lastOrError
-    } yield exitCode
+    BlazeServerBuilder[IO](ExecutionContext.global)
+      .bindHttp(
+        port = resources.authServiceConfig.httpServerConfig.port,
+        host = resources.authServiceConfig.httpServerConfig.address
+      )
+      .withHttpApp(httpApp = getHttpRoutes(resources))
+      .serve
+      .compile
+      .drain
+      .as(ExitCode.Success)
 
-  private def getHttpRoutes: Kleisli[IO, Request[IO], Response[IO]] = {
-    val httpApi = new HttpApis()
-    httpApi.routes
+  private def getHttpRoutes(
+    appResources: AppResources
+  ): Kleisli[IO, Request[IO], Response[IO]] = {
+    val healthCheckService =
+      HealthCheckServiceImpl.make(appResources.psql, appResources.redis)
+    HttpApi.make(healthCheckService)
   }
 }

@@ -1,13 +1,16 @@
 package org.example.analyzer.authentication.resources
 
 import cats.effect.{ IO, Resource }
+import dev.profunktor.redis4cats.effect.Log.Stdout._
+import dev.profunktor.redis4cats.{ Redis, RedisCommands }
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import org.example.analyzer.authentication.domain._
 
 final case class AppResources(
   authServiceConfig: AuthServiceConfig,
-  psql: HikariTransactor[IO]
+  psql: HikariTransactor[IO],
+  redis: RedisCommands[IO, String, String]
 )
 
 object AppResources {
@@ -15,25 +18,31 @@ object AppResources {
     authServiceConfig: IO[AuthServiceConfig]
   ): Resource[IO, AppResources] =
     for {
-      cfg  <- Resource.eval(authServiceConfig)
-      psql <- mkPostgreSQLResource(cfg.databaseConfig)
-    } yield AppResources(cfg, psql)
+      cfg   <- Resource.eval(authServiceConfig)
+      psql  <- mkPostgreSQLResource(cfg.postgresConfig)
+      redis <- mkRedisResource(cfg.redisConfig)
+    } yield AppResources(cfg, psql, redis)
 
   private def mkPostgreSQLResource(
-    databaseConfig: DatabaseConfig
+    postgresConfig: PostgresConfig
   ): Resource[IO, HikariTransactor[IO]] = {
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](
-        databaseConfig.threadPoolSize
+        postgresConfig.threadPoolSize
       )
       xa <- HikariTransactor.newHikariTransactor[IO](
-        driverClassName = databaseConfig.driver,
+        driverClassName = postgresConfig.driver,
         url =
-          s"jdbc:postgresql://${databaseConfig.host}:${databaseConfig.port}/${databaseConfig.databaseName}",
-        user = databaseConfig.user,
-        pass = databaseConfig.password,
+          s"jdbc:postgresql://${postgresConfig.host}:${postgresConfig.port}/${postgresConfig.databaseName}",
+        user = postgresConfig.user,
+        pass = postgresConfig.password,
         connectEC = ce
       )
     } yield xa
   }
+
+  private def mkRedisResource(
+    redisConfig: RedisConfig
+  ): Resource[IO, RedisCommands[IO, String, String]] =
+    Redis[IO].utf8(redisConfig.uri)
 }

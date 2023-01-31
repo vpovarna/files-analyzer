@@ -2,7 +2,7 @@ package org.example.analyzer.authentication.domain
 
 case class HttpServerConfig(address: String, port: Int)
 
-case class DatabaseConfig(
+final case class PostgresConfig(
   driver: String,
   host: String,
   port: Int,
@@ -12,7 +12,10 @@ case class DatabaseConfig(
   threadPoolSize: Int
 )
 
-case class AuthServiceConfig(
-  databaseConfig: DatabaseConfig,
+final case class RedisConfig(uri: String)
+
+final case class AuthServiceConfig(
+  postgresConfig: PostgresConfig,
+  redisConfig: RedisConfig,
   httpServerConfig: HttpServerConfig
 )

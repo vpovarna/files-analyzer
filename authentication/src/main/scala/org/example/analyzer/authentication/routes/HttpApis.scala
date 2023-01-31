@@ -1,15 +1,23 @@
 package org.example.analyzer.authentication.routes
 
-import cats.data.Kleisli
 import cats.effect.IO
-import org.http4s.{ Request, Response }
+import cats.syntax.all._
+import org.example.analyzer.authentication.algebra.HealthCheckService
+import org.http4s.HttpRoutes
 import org.http4s.implicits._
 import org.http4s.server.Router
 
-final class HttpApis {
-  private val healthRoutes = new HealthRoutes()
+object HttpApi {
 
-  val routes: Kleisli[IO, Request[IO], Response[IO]] = Router(
-    v1 -> healthRoutes.routes
-  ).orNotFound
+  def make(healthCheckService: HealthCheckService) = {
+    val healthRoute: HttpRoutes[IO] = new HealthRoute().routes
+    val healthDetailedRoute: HttpRoutes[IO] = new HealthDetailedRoute(
+      healthCheckService
+    ).routes
+
+    val healthRoutes: HttpRoutes[IO] =
+      healthRoute <+> healthDetailedRoute
+
+    Router(v1 -> healthRoutes).orNotFound
+  }
 }
